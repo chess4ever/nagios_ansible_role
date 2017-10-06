@@ -1,0 +1,14 @@
+---
+download_dir: "/tmp/nagios"
+
+nagios_version: 4.3.4
+nagiosurl: "https://github.com/NagiosEnterprises/nagioscore/archive/nagios-{{ nagios_version }}.tar.gz"
+nagiossrc: "nagioscore-nagios-{{ nagios_version }}"
+
+pluginsurl: "https://github.com/nagios-plugins/nagios-plugins/archive/release-2.2.1.tar.gz"
+pluginssrc: "nagios-plugins-release-2.2.1"
+
+# This is a list of users allowed to login to the nagios web frontend
+nagios_users:
+  - user: nagiosadmin
+    pass: admin

@@ -1,0 +1,12 @@
+---
+# tasks file for nagios
+
+- name: Ensure download directory {{ download_dir }} is present
+  file: path={{ download_dir }} state=directory
+
+- include: setup-Debian-family-prerequisites.yml
+  when: ansible_os_family == 'Debian'
+
+- include: build-nagios.yml
+
+- include: build-plugins.yml

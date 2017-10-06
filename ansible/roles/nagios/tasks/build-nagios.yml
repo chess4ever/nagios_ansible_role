@@ -1,0 +1,93 @@
+---
+
+- name: GET Nagios
+  get_url: 
+    url: "{{ nagiosurl }}" 
+    dest: "{{ download_dir }}/{{ nagiossrc }}.tar.gz"
+
+- name: Unpack Nagios source files
+  shell: cd {{ download_dir }} && tar xzf {{ nagiossrc }}.tar.gz creates={{ download_dir }}/{{ nagiossrc }}
+
+- name: ./configure
+  shell: cd {{ download_dir }}/{{ nagiossrc }} && ./configure --with-httpd_conf=/etc/apache2/sites-enabled creates={{ download_dir }}/{{ nagiossrc }}/Makefile
+
+- name: Make all
+  shell: cd {{ download_dir }}/{{ nagiossrc }} && make all creates={{ download_dir }}/{{ nagiossrc }}/base/nagios
+
+- name: Create nagios user
+  become: yes
+  user: 
+    name: nagios 
+    state: present
+
+- name: Add apache user to nagios group
+  become: yes
+  user: 
+    name: www-data
+    state: present
+    groups: nagios
+
+- name: Make install
+  become: yes
+  shell: cd {{ download_dir }}/{{ nagiossrc }} && make install creates=/usr/local/nagios/bin/nagios
+
+- name: Make install-init
+  become: yes
+  shell: cd {{ download_dir }}/{{ nagiossrc }} && make install-init creates=/etc/init.d/nagios
+
+- name: Ensure Nagios is enabled
+  become: yes
+  systemd: 
+    name: nagios 
+    enabled: yes
+
+- name: Make install-commandmode
+  become: yes
+  shell: cd {{ download_dir }}/{{ nagiossrc }} && make install-commandmode creates=/usr/local/nagios/var/rw
+
+- name: Make install-config
+  become: yes
+  shell: cd {{ download_dir }}/{{ nagiossrc }} && make install-config creates=/usr/local/nagios/etc/nagios.cfg
+
+- name: Make install-webconf
+  become: yes
+  shell: cd {{ download_dir }}/{{ nagiossrc }} && make install-webconf 
+  args: 
+    creates: /etc/apache2/sites-enabled/nagios.conf
+
+- name: Enable rewrite apache module
+  become: yes
+  apache2_module:
+    state: present
+    name: rewrite
+  notify: 
+    - restart apache
+
+- name: Enable cgi apache module
+  become: yes
+  apache2_module:
+    state: present
+    name: cgi
+  notify: 
+    - restart apache
+
+- name: Set htpasswd for gui users
+  become: yes
+  htpasswd: 
+    path: /usr/local/nagios/etc/htpasswd.users 
+    name: "{{ item.user }}"
+    password: "{{ item.pass }}"
+    state: present
+  with_items: "{{ nagios_users }}"
+
+- name: Ensure Apache is started
+  become: yes
+  systemd: 
+    name: apache2 
+    state: started
+
+- name: Ensure Nagios is started
+  become: yes
+  systemd: 
+    name: nagios 
+    state: started

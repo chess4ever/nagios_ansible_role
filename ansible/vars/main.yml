@@ -1,0 +1,5 @@
+---
+# vars file for nagios
+nagios_users:
+  - user: nagiosadmin
+    pass: S3cre7Passw0rd
